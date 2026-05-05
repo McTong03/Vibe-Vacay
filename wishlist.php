@@ -15,7 +15,7 @@
 
 <style>
     body{
-        height: 5000px;
+        height: 2000px;
     }
 
     #header {
@@ -232,6 +232,38 @@
         margin-left: 250px;
     }
 
+    .view-more-container {
+        margin-top: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .view-more-container::before,
+    .view-more-container::after {
+        content: "";
+        flex: 1;
+        height: 2px;
+        background-color: #1A2B49;
+    }
+
+    .view-more-container::before {
+        margin-right: 10px;
+    }
+
+    .view-more-container::after {
+        margin-left: 10px;
+    }
+
+    .view-more {
+        width: 150px;
+        height: 55px;
+        font-size: 20px;
+        background-color: #1A2B49;
+        color: white;
+        border-radius: 50px;
+    }
+
 </style>
 
 <body>
@@ -440,6 +472,11 @@
             </div>
         </div>
     </div>
+
+    <div class="view-more-container">
+        <button class="view-more" >View More</button>
+    </div>
+    
     
 
 </body>
