@@ -4,274 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibe Vacay</title>
-    <style>
-        /* Base Styles */
-        :root {
-            --primary-dark: #1e293b;
-            --text-main: #333333;
-            --bg-light: #f8fafc;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            color: var(--text-main);
-            background-color: #ffffff;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        /* Navigation */
-        .navbar {
-            position: absolute;
-            top: 0;
-            width: 100%;
-            padding: 1.5rem 4rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-            z-index: 10;
-        }
-
-        .logo {
-            font-size: 1.25rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        .auth-buttons {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            font-weight: 600;
-        }
-
-        .signup-btn {
-            background-color: white;
-            color: var(--primary-dark);
-            padding: 0.5rem 1.2rem;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* Hero Section */
-        .hero {
-            height: 80vh;
-            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2)), 
-                        url('Image/travel_luggage.jpg') center/cover;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 0 4rem;
-            color: white;
-            position: relative;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            max-width: 600px;
-            line-height: 1.2;
-            margin-bottom: 2rem;
-        }
-
-        .explore-btn {
-            background-color: white;
-            color: var(--primary-dark);
-            width: fit-content;
-            padding: 0.8rem 1.5rem;
-            border-radius: 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 4rem;
-        }
-
-        .hero p {
-            max-width: 500px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            position: absolute;
-            bottom: 2rem;
-        }
-
-        /* Search Section */
-        .search-section {
-            display: flex;
-            justify-content: center;
-            padding: 2rem;
-        }
-
-        .search-bar {
-            background-color: var(--primary-dark);
-            padding: 0.5rem;
-            padding-left: 1.5rem;
-            border-radius: 40px;
-            display: flex;
-            width: 600px;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .search-bar input {
-            background: transparent;
-            border: none;
-            color: white;
-            outline: none;
-            width: 100%;
-        }
-
-        .search-bar input::placeholder {
-            color: #cbd5e1;
-        }
-
-        .search-bar button {
-            background-color: white;
-            color: var(--primary-dark);
-            border: none;
-            padding: 0.6rem 1.5rem;
-            border-radius: 30px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* Mood Section */
-        .mood-section {
-            padding: 4rem;
-            text-align: center;
-        }
-
-        .mood-section h2 {
-            font-size: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .cards-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-        }
-
-        .card {
-            height: 400px;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            align-items: flex-end;
-            padding: 2rem;
-            text-align: left;
-            color: white;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 50%);
-            z-index: 1;
-        }
-
-        .card-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        .card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .card p {
-            font-size: 0.9rem;
-            line-height: 1.4;
-            color: #e2e8f0;
-        }
-
-        .card-1 { background: url('Image/Lifestyle-Transformation.jpg') center/cover; }
-        .card-2 { background: url('Image/paraglider.jpg') center/cover; }
-        .card-3 { background: url('Image/Hiking.jpg') center/cover; }
-
-        /* Features Section */
-        .features-section {
-            padding: 4rem;
-        }
-
-        .features-section h2 {
-            font-size: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .features-container {
-            display: flex;
-            gap: 4rem;
-        }
-
-        .features-list {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .feature-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-        }
-
-        .feature-title {
-            background-color: var(--primary-dark);
-            color: white;
-            padding: 0.8rem 1.5rem;
-            border-radius: 10px;
-            font-weight: 600;
-            width: 100%;
-        }
-
-        .feature-item p {
-            font-size: 0.95rem;
-            line-height: 1.5;
-            padding: 0 0.5rem;
-            color: #475569;
-        }
-
-        .features-images {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .features-images img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            border-radius: 20px;
-        }
-
-    </style>
+    <link rel="stylesheet" href="css/landingpage.css">
 </head>
 <body>
 
@@ -291,8 +24,28 @@
             <a href="./signup-page.php" class="signup-btn">Sign Up <span>➔</span></a>
         </div>
     </header>
+    <!-- <header id="header">
+        <div class="logo-container">
+            <img src="icon/LogoName.png" class="logo" />
+        </div>
 
-    <section class="hero">
+        <p class="logo-name">Vibe Vacay</p>
+        <p class="home">Home</p>
+        <p class="destination-management">Destination Management</p>
+        <p class="statistic">Statistic</p>
+        <p class="user-management">User Managememt</p>
+        <p class="logout">Log Out</p>
+
+
+        <div class="profile-box">
+            <p class="profile">Profile</p>
+            <img src="icon/profile1.jpg" class="profile-icon" />
+
+        </div>
+    </header> -->
+
+    <section class="hero" style="background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2)),
+        url('Image/travel_luggage.jpg') center/cover;">
         <h1>Discover your perfect destination based on how you feel</h1>
         <a href="./recommendation-page.php" class="explore-btn">Explore <span>➔</span></a>
         <p>Not sure where to go? Let your mood decide. Discover destinations perfectly matched to how you feel right now.</p>
@@ -308,19 +61,19 @@
     <section class="mood-section">
         <h2>Start Your Journey Based on How You Feel</h2>
         <div class="cards-container">
-            <div class="card card-1">
+            <div class="card card-1" style="background-image: url('Image/Lifestyle-Transformation.jpg');">
                 <div class="card-content">
                     <h3>Relax & Recharge</h3>
                     <p>Find peaceful destinations to unwind from quiet beaches to cozy retreats.</p>
                 </div>
             </div>
-            <div class="card card-2">
+            <div class="card card-2" style="background-image: url('Image/paraglider.jpg');">
                 <div class="card-content">
                     <h3>Adventure Awaits</h3>
                     <p>Feeling bold? Explore thrilling locations packed with excitement and new experiences.</p>
                 </div>
             </div>
-            <div class="card card-3">
+            <div class="card card-3" style="background-image: url('Image/Hiking.jpg');">
                 <div class="card-content">
                     <h3>Escape & Reflect</h3>
                     <p>Reconnect with yourself through calming, meaningful travel experiences.</p>
