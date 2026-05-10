@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="css/admin-dashboard.css">
+    <title>Statistics & Report</title>
+    <link rel="stylesheet" href="css/admin-nav-bar.css">
 </head>
 <body>
     <header id="header">
@@ -15,9 +15,9 @@
         </div>
 
         <nav class= "nav-bar">
-            <p class="nav-button active">Home</p>
+            <p class="nav-button">Home</p>
             <p class="nav-button">Destination Management</p>
-            <p class="nav-button">Statistic</p>
+            <p class="nav-button active">Statistic</p>
             <p class="nav-button">User Management</p>
             <p class="nav-button">Log Out</p>
         </nav>
@@ -30,5 +30,7 @@
     </header>
 
     
+</body>
+</html>
 </body>
 </html>
