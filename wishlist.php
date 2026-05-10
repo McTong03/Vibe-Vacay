@@ -1,3 +1,38 @@
+<?php
+require 'conn.php';
+session_start();
+
+$user_id = $_SESSION['user_id']; 
+
+$sql = "SELECT f.favourite_id, 
+               d.destination_id,
+               d.destination_name, 
+               d.image_url, 
+               d.average_rating,
+               s.state_name,
+               GROUP_CONCAT(dt.tag_name SEPARATOR ', ') as climate
+        FROM favorites f
+        JOIN destinations d ON f.destination_id = d.destination_id
+        JOIN states s ON d.state_id = s.state_id
+        LEFT JOIN destination_tags dt ON d.destination_id = dt.tag_id
+        WHERE f.user_id = '$user_id'
+        GROUP BY f.favourite_id";
+$result = mysqli_query($conn, $sql);
+
+if(isset($_GET['favourite_id'])) {
+    $favourite_id = $_GET['favourite_id'];
+    $user_id = $_SESSION['user_id'];
+    
+    $sql = "DELETE FROM favorites WHERE favourite_id = '$favourite_id' AND user_id = '$user_id'";
+    mysqli_query($conn, $sql);
+}
+
+header('Location: wishlist.php');
+exit();
+?>
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -292,6 +327,57 @@
     <p class="wishlist-name">Wishlist</p>
 
     <div class="similar-card-container">
+    <?php 
+    if(mysqli_num_rows($result) > 0) {
+        while($row = mysqli_fetch_assoc($result)) { 
+    ?>
+        <div class="similar-container">
+            <div>
+                <img class="KLCC" src="<?php echo htmlspecialchars($row['image_url']); ?>">
+            </div>
+
+            <div>
+                <p class="kuala-lumpur"><?php echo htmlspecialchars($row['state_name']); ?></p>
+            </div>
+
+            <div>
+                <p class="Petronas-Twin-Towers"><?php echo htmlspecialchars($row['destination_name']); ?></p>
+            </div>
+
+            <div>
+                <p class="summer">Climate: <?php echo htmlspecialchars($row['climate']); ?></p>
+            </div>
+
+            <div>
+                <p class="ratings1"><?php echo $row['average_rating']; ?></p>
+                <img class="star-icon" src="icon/star.png">
+            </div>
+
+            <div>
+                <p class="from">From</p>
+                <p class="RM">RM<?php echo $row['destination_price']; ?></p>
+            </div>
+
+            <!-- ✅ Heart button removes from wishlist -->
+            <a href="remove-wishlist.php?favourite_id=<?php echo $row['favourite_id']; ?>"
+                onclick="return confirm('Remove from wishlist?')">>
+                <button class="heart-container">
+                    <img class="heart-button" src="icon/heart.png">
+                </button>
+            </a>
+        </div>
+    <?php 
+        }
+    } else {
+        echo '<p style="color:#666; margin-left:70px; font-size:18px;">Your wishlist is empty.</p>';
+    }
+    ?>
+    </div>
+
+
+
+
+    <!-- <div class="similar-card-container">
         <div class="similar-container">
             <div>
                 <img class="KLCC" src="Image/KLCC.jpg">
@@ -475,7 +561,7 @@
 
     <div class="view-more-container">
         <button class="view-more" >View More</button>
-    </div>
+    </div> -->
     
     
 
