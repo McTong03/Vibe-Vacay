@@ -153,7 +153,7 @@
     .back-icon {
         width: 22px;
         height: 22px;
-        color: white;
+        filter: brightness(0) invert(1);
     }
 
     /* Title Styles */
@@ -252,10 +252,10 @@
 
     <div class="title">
         <button type="button" class="back_Btn">
-            <img src="icon/back1.png" class="back-icon" />
+            <img src="icon/error.png" class="back-icon" />
         </button>
 
-        <img src="icon/images.png" class="title-icon" alt="Tagging Type">
+        <img src="icon/tag.png" class="title-icon" alt="Tagging Type">
 
         <h1>Add Tagging</h1>
     </div>

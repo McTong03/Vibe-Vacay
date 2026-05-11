@@ -267,7 +267,7 @@
 
     <div class="title">
         <button type="button" class="back_Btn">
-            <img src="icon/back.png" class="back-icon" />
+            <img src="icon/error.png" class="back-icon" />
         </button>
 
         <img src="icon/destination.png" class="title-icon" alt="Destination">

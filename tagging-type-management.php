@@ -264,7 +264,7 @@
     </header>
 
     <div class="title">
-        <img src="icon/images.png" class="title-icon" alt="Tagging Type">
+        <img src="icon/tag.png" class="title-icon" alt="Tagging Type">
         <h1>Tagging Type Management</h1>
     </div>
 
@@ -283,7 +283,7 @@
                         <img src="icon/view.png" class="feature-icon" alt="view">
                         View Tagging</button>
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">
@@ -299,7 +299,7 @@
                         <img src="icon/view.png" class="feature-icon" alt="view">
                         View Tagging</button>
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">
@@ -315,7 +315,7 @@
                         <img src="icon/view.png" class="feature-icon" alt="view">
                         View Tagging</button>
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">
@@ -331,7 +331,7 @@
                         <img src="icon/view.png" class="feature-icon" alt="view">
                         View Tagging</button>
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">
@@ -347,7 +347,7 @@
                         <img src="icon/view.png" class="feature-icon" alt="view">
                         View Tagging</button>
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">

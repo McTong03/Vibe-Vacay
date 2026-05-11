@@ -189,7 +189,7 @@
     .back-icon {
         width: 22px;
         height: 22px;
-        color: white;
+        filter: brightness(0) invert(1);
     }
 
     /* Title Styles */
@@ -284,10 +284,10 @@
 
     <div class="title">
         <button type="button" class="back_Btn">
-            <img src="icon/back1.png" class="back-icon" />
+            <img src="icon/error.png" class="back-icon" />
         </button>
 
-        <img src="icon/images.png" class="title-icon" alt="Tagging">
+        <img src="icon/tag.png" class="title-icon" alt="Tagging">
 
         <h1>Tagging Management</h1>
     </div>
@@ -304,7 +304,7 @@
                 <h3>Peaceful</h3>
                 <div class="edit_delete_box">
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">
@@ -317,7 +317,7 @@
 
                 <div class="edit_delete_box">
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">
@@ -330,7 +330,7 @@
 
                 <div class="edit_delete_box">
                     <button type="button" class="edit_Btn">
-                        <img src="icon/edit1.png" class="feature-icon" alt="edit">
+                        <img src="icon/edit.png" class="feature-icon" alt="edit">
                         Edit</button>
                     <button type="button" class="delete_Btn">
                         <img src="icon/delete.png" class="feature-icon" alt="delete">
