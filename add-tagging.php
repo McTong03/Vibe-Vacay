@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Tagging Type Page</title>
+    <title>Add Tagging Page</title>
 </head>
 <style>
     body {
@@ -114,6 +114,7 @@
         padding: 30px;
         border-radius: 15px;
     }
+
     .container h3 {
         margin: 0;
         color: white;
@@ -160,7 +161,6 @@
         display: flex;
         align-items: center;
         gap: 15px;
-
         margin-left: 15px;
         margin-top: 20px;
     }
@@ -174,9 +174,32 @@
         margin: 0;
     }
 
+    .filter-bar {
+        height: 55px;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        position: relative; 
+        z-index: 3;        
+    }
+
+    .filter-bar select {
+        width: 1180px;
+        height: 30px;
+        background-color: #F9F2F2;
+        border-radius: 10px;
+        padding-left: 10px;
+    }
+
+    .filter-box,{
+        align-items: center;
+        margin-left: 20px;
+        border-radius: 30px;
+    }
+
 
     /* Add button Styles */
-    .filter-actions{
+    .filter-actions {
         display: flex;
         gap: 8px;
         align-items: center;
@@ -234,17 +257,29 @@
 
         <img src="icon/images.png" class="title-icon" alt="Tagging Type">
 
-        <h1>Add Tagging Type</h1>
+        <h1>Add Tagging</h1>
     </div>
 
     <div class="content-container">
         <div class="container">
-            <h3>Tagging Type / Name</h3>
+            <h3>Tagging Type</h3>
+            <div class="filter-bar">
+                <select name="filter-box" required>
+                    <option value="">Please Select</option>
+                    <option value="mood">Mood</option>
+                    <option value="Family">Climate</option>
+                    <option value="Friend">Travel Companion</option>
+                    <option value="Colleague">Destination Type</option>
+                    <option value="Other">Travel Preferences</option>
+                </select>
+            </div>
+
+            <h3>Tagging Name</h3>
             <input type="text" class="tag-type" placeholder="Enter tagging type name">
 
             <div class="filter-actions">
                 <button type="reset" class="btn btn-reset">Reset</button>
-                <button class="btn btn-add">Add Tagging Type</button>
+                <button class="btn btn-add">Add Tagging</button>
             </div>
         </div>
     </div>

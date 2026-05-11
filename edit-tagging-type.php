@@ -244,7 +244,7 @@
 
             <div class="filter-actions">
                 <button type="reset" class="btn btn-reset">Reset</button>
-                <button class="btn btn-add">Add Destination</button>
+                <button class="btn btn-add">Edit Tagging Type</button>
             </div>
         </div>
     </div>
