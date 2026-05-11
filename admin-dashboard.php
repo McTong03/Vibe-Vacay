@@ -29,6 +29,21 @@
         </div>
     </header>
 
+    <section class="banner">
+        <div class="banner-content">
+            <h1 class="welcome">Welcome Back!</h1>
+            <div class="stats">
+                <div class="stat-card">
+                    <p class="stat-label">Total Users</p>
+                    <p class="stat-value">5,670</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-label">Destinations</p>
+                    <p class="stat-value">9,270</p>
+                </div>
+            </div>
+        </div>
+    </section>
     
 </body>
 </html>
