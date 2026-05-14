@@ -83,6 +83,33 @@
                 </a>
             </div>
 
+        <h2 class="section-title">Most Popular Destinations</h2>
+            <div>
+            <div class="destinations-list">
     
+                <div class="destination-item">
+                    <img class="destination-img" src="image/batucaves.jpg" 
+                        onerror="this.src='../image/batucaves.jpg'" />
+                    <div class="destination-info">
+                        <p class="destination-location">Kuala Lumpur</p>
+                        <p class="destination-name">Batu Caves</p>
+                    </div>
+                    <div class="destination-rating">4.7 <span class="star">&#9733;</span></div>
+                </div>
+            </div>
+
+        <h2 class="section-title">Destination Chart (Last 7 days)</h2>
+        <div class="chart-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="12" width="4" height="10" rx="1"/>
+                <rect x="9" y="7" width="4" height="15" rx="1"/>
+                <rect x="16" y="3" width="4" height="19" rx="1"/>
+            </svg>
+            <span>Live Chart</span>
+        </div>
+ 
+    </main>
+            
+
 </body>
 </html>
