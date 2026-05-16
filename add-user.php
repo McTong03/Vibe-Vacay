@@ -29,6 +29,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $user_role
         );
         mysqli_stmt_execute($stmt);
+
+        if (!mysqli_stmt_errno($stmt)) {
+            mysqli_stmt_close($stmt);
+            header("Location: user-management.php");
+            exit();
+        } else {
+            $error_message = "Error: " . mysqli_stmt_error($stmt);
+        }
     }
 }
 ?>
@@ -241,7 +249,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </header>
 
-    <button class="error-container">
+    <button class="error-container" onclick="window.location.href='user-management.php'">
         <img class="error-button" src="icon/error.png">
     </button>
 
@@ -270,14 +278,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <div class="role-container">
                 <br><br><label for="user_role">User Role</label><br>
-                <!-- <input type="text" id="user_role" name="user_role" 
-                    value="<?= htmlspecialchars($_POST['user_role'] ?? '') ?>"
-                       placeholder="e.g. admin or user" required> -->
 
                 <select id="user_role" name="user_role" required>
                     <option value="" disabled selected>Select a role</option>
                     <option value="admin">Admin</option>
-                    <option value="user">User</option>
+                    <option value="user/traveller">User</option>
                 </select>
             </div>
 

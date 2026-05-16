@@ -1,3 +1,67 @@
+<?php
+require 'conn.php';
+ 
+if (!isset($_GET['id'])) {
+    header("Location: user-management.php");
+    exit();
+}
+ 
+$id = intval($_GET['id']);
+$success = false;
+ 
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $user_id       = intval($_POST['user_id']);
+    $user_name     = $_POST['user_name'];
+    $user_email    = $_POST['user_email'];
+    $user_password = $_POST['user_password'];
+    $user_role     = $_POST['user_role'];
+ 
+    // Use prepared statement to prevent SQL injection
+    $stmt = mysqli_prepare($conn,
+        "UPDATE users SET 
+            user_name = ?, 
+            user_email = ?, 
+            user_password = ?, 
+            user_role = ? 
+         WHERE user_id = ?"
+    );
+ 
+    if (!$stmt) {
+        die("Prepare failed: " . mysqli_error($conn));
+    }
+ 
+    mysqli_stmt_bind_param($stmt, "ssssi",
+        $user_name, $user_email, $user_password, $user_role, $user_id
+    );
+ 
+    if (mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        header("Location: user-management.php");
+        exit();
+    } else {
+        echo "Error: " . mysqli_stmt_error($stmt);
+        mysqli_stmt_close($stmt);
+    }
+}
+ 
+$stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE user_id = ?");
+if (!$stmt) {
+    die("Prepare failed: " . mysqli_error($conn));
+}
+ 
+mysqli_stmt_bind_param($stmt, "i", $id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$user   = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
+ 
+if (!$user) {
+    header("Location: user-management.php");
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -114,6 +178,8 @@
         margin-top: 55px;
         border-radius: 50px;
         margin-left: 80px;
+        border: none;      
+        cursor: pointer;    
     }
 
     .error-button {
@@ -137,7 +203,8 @@
         margin-left: 50px;
     }
 
-    input[type=text] {
+    input[type=text],
+    select {
         width: 1200px;
         height: 50px;
         border-width: 3px;
@@ -168,6 +235,7 @@
         font-size: 30px;
         margin-top: 50px;
         border-radius: 20px;
+        cursor: pointer;
     }
 
     .reset-button {
@@ -205,48 +273,83 @@
         </div>
     </header>
 
-    <button class="error-container">
+    <button class="error-container" onclick="window.location.href='user-management.php'"> 
         <img class="error-button" src="icon/error.png">
     </button>
 
     <h2>Edit User</h2>
 
-    <div id="container">
-        <div class="id-container">
-            <br><br><label>User ID</label><br>
-            <input type="text" name="user_id">
-        </div>
+    <form method="POST" action="edit-user.php?id=<?php echo $user['user_id']; ?>">
 
-        <div class="name-container">
-            <br><br><label>User Name</label><br>
-            <input type="text" name="user_name">
-        </div>
+        <input type="hidden" id="orig_name"     value="<?= htmlspecialchars($user['user_name']) ?>">
+        <input type="hidden" id="orig_email"    value="<?= htmlspecialchars($user['user_email']) ?>">
+        <input type="hidden" id="orig_role"     value="<?= htmlspecialchars($user['user_role']) ?>">
+        <input type="hidden" id="orig_password" value="<?= htmlspecialchars($user['user_password']) ?>">
 
-        <div class="email-container">
-            <br><br><label>User Email</label><br>
-            <input type="text" name="user_email">
-        </div>
+        <div id="container">
+            <div class="id-container">
+                <br><br><label>User ID</label><br>
+                <input type="text" name="user_id" 
+                    value="<?php echo htmlspecialchars($user['user_id']); ?>" readonly>
+            </div>
 
-        <div class="password-container">
-            <br><br><label>User Password</label><br>
-            <input type="text" name="user_password">
-        </div>
+            <div class="name-container">
+                <br><br><label>User Name</label><br>
+                <input type="text" name="user_name"
+                    value="<?php echo htmlspecialchars($user['user_name']); ?>">
+            </div>
 
-        <div class="role-container">
-            <br><br><label>User Role</label><br>
-            <input type="text" name="user_role">
-        </div>
+            <div class="email-container">
+                <br><br><label>User Email</label><br>
+                <input type="text" name="user_email"
+                    value="<?php echo htmlspecialchars($user['user_email']); ?>">
+            </div>
 
-        <button class="reset-button">Reset</button>
-        <button class="submit-button">Submit</button>
+            <div class="password-container">
+                <br><br><label>User Password</label><br>
+                <input type="text" name="user_password"
+                    value="<?php echo htmlspecialchars($user['user_password']); ?>">
+            </div>
 
+            <div class="role-container">
+                <br><br><label>User Role</label><br>
+                <select id="user_role" name="user_role" required>
+                    <option value="" disabled <?= empty($user['user_role']) ? 'selected' : '' ?>>Select a role</option>
+                    <option value="admin" <?= $user['user_role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
+                    <option value="user/traveller" <?= $user['user_role'] === 'user/traveller' ? 'selected' : '' ?>>User</option>
+                </select>
+            </div>
 
-
-
-        
+            <button type="button" class="reset-button" onclick="resetForm()">Reset</button>
+            <button type="submit" class="submit-button">Submit</button>
             
+            
+             
+        </div>
+    </form> 
+
+    <div class="modal-overlay <?= $success ? 'active' : '' ?>" id="successModal">
+        <div class="modal-box">
+            <div class="modal-icon">
+                <!-- Checkmark icon -->
+                <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <h3>Submit Successful!</h3>
+            <p>User details have been updated.</p>
+            <button class="modal-ok-btn" onclick="window.location.href='user-management.php'">OK</button>
+        </div>
     </div>
     
+     <script>
+        function resetForm() {
+            document.querySelector('[name="user_name"]').value     = document.getElementById('orig_name').value;
+            document.querySelector('[name="user_email"]').value    = document.getElementById('orig_email').value;
+            document.querySelector('[name="user_role"]').value     = document.getElementById('orig_role').value;
+            document.querySelector('[name="user_password"]').value = document.getElementById('orig_password').value;
+        }
+    </script>
 
 
 
