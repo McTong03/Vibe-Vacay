@@ -282,7 +282,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <select id="user_role" name="user_role" required>
                     <option value="" disabled selected>Select a role</option>
                     <option value="admin">Admin</option>
-                    <option value="user/traveller">User</option>
+                    <option value="user/traveller">User/Traveller</option>
                 </select>
             </div>
 

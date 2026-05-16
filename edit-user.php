@@ -228,7 +228,7 @@ if (!$user) {
         margin-left: -10px;
     }
 
-    .reset-button,
+    .cancel-button,
     .submit-button {
         width: 350px;
         height: 70px;
@@ -238,7 +238,7 @@ if (!$user) {
         cursor: pointer;
     }
 
-    .reset-button {
+    .cancel-button {
         margin-left: 250px;
         background-color: #C8C8C8;
     }
@@ -320,39 +320,13 @@ if (!$user) {
                 </select>
             </div>
 
-            <button type="button" class="reset-button" onclick="resetForm()">Reset</button>
+            <button type="button" class="cancel-button" onclick="window.location.href='user-management.php'">Cancel</button>
             <button type="submit" class="submit-button">Submit</button>
             
             
              
         </div>
     </form> 
-
-    <div class="modal-overlay <?= $success ? 'active' : '' ?>" id="successModal">
-        <div class="modal-box">
-            <div class="modal-icon">
-                <!-- Checkmark icon -->
-                <svg viewBox="0 0 24 24">
-                    <polyline points="20 6 9 17 4 12"/>
-                </svg>
-            </div>
-            <h3>Submit Successful!</h3>
-            <p>User details have been updated.</p>
-            <button class="modal-ok-btn" onclick="window.location.href='user-management.php'">OK</button>
-        </div>
-    </div>
-    
-     <script>
-        function resetForm() {
-            document.querySelector('[name="user_name"]').value     = document.getElementById('orig_name').value;
-            document.querySelector('[name="user_email"]').value    = document.getElementById('orig_email').value;
-            document.querySelector('[name="user_role"]').value     = document.getElementById('orig_role').value;
-            document.querySelector('[name="user_password"]').value = document.getElementById('orig_password').value;
-        }
-    </script>
-
-
-
 
 </body>
 </html>
