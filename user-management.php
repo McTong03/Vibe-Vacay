@@ -2,6 +2,7 @@
 require 'conn.php';
 session_start();
 
+
 $roleFilter = $_GET['user_role'] ?? '';
 $keyword    = trim($_GET['q'] ?? '');
 
@@ -12,7 +13,7 @@ SELECT
   u.user_email,
   u.user_password,
   u.user_role,
-  COALESCE(p.profile_picture, 'image/defaultProfile.jpg') AS profile_picture
+  COALESCE(p.profile_picture, 'Image/default-profile.jpg') AS profile_picture
 FROM users u
 LEFT JOIN user_profile p ON p.user_id = u.user_id
 ";
@@ -487,7 +488,7 @@ $stmt->close();
                 <div class="user-box-container">
                     <div class="profile-picture1">
                         <img class="profile-picture"
-                            src="<?php echo !empty($user['profile_picture']) ? htmlspecialchars($user['profile_picture']) : 'image/defaultProfile.jpg'; ?>">
+                            src="<?php echo !empty($user['profile_picture']) ? htmlspecialchars($user['profile_picture']) : 'Image/default-profile.jpg'; ?>">
                     </div>
 
                     <div class="id">
