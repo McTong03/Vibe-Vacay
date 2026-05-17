@@ -92,7 +92,7 @@ $stmt = $conn->prepare("
     LEFT JOIN states s ON s.state_id = d.state_id
     WHERE d.state_id = (SELECT state_id FROM destinations WHERE destination_id = ?)
       AND d.destination_id != ?
-    LIMIT 3
+    LIMIT 15
 ");
 $stmt->bind_param("ii", $destination_id, $destination_id);
 $stmt->execute();
@@ -115,7 +115,17 @@ function formatPrice($price) {
         : 'RM ' . htmlspecialchars($price);
 }
  
-$heroImg = imgSrc($destination['image_url']);
+$firstImage = explode(',', $destination['image_url'])[0];
+$heroImg = imgSrc(trim($firstImage));
+
+$galleryImages = [];
+if (!empty($destination['image_url'])) {
+    $allImages = array_filter(array_map('trim', explode(',', $destination['image_url'])));
+    $allImages = array_values($allImages);
+    $galleryImages = array_slice($allImages, 1);
+}
+$galleryJson = json_encode($galleryImages);
+$similarJson = json_encode($similar);
 ?>
 
 <!DOCTYPE html>
@@ -435,14 +445,6 @@ $heroImg = imgSrc($destination['image_url']);
         width: 70px;
     }
 
-    .next-button {
-        border:none;
-        background: none;
-        position: relative;
-        top: -405px;
-        left: 1570px;
-    }
-
     .saying {
         font-size: 36px;
         font-family: 'Open Sans';
@@ -636,6 +638,10 @@ $heroImg = imgSrc($destination['image_url']);
         left: 1400px;
     }
 
+    .no-reviews {
+        margin-left: 60px;
+    }
+
 </style>
 
 <body>
@@ -659,7 +665,7 @@ $heroImg = imgSrc($destination['image_url']);
         </div>
     </header>
 
-    <img class="batucaves1" src="<?php echo htmlspecialchars($destination['image_url']); ?>">
+    <img class="batucaves1" src="<?php echo $heroImg; ?>">
 
     <p class="batucaves-name"><?php echo htmlspecialchars($destination['destination_name']); ?></p>
     <p class="malaysia"><?php echo htmlspecialchars($destination['state_name']); ?>, Malaysia</p>
@@ -693,18 +699,25 @@ $heroImg = imgSrc($destination['image_url']);
 
     <p class="gallery">Gallery</p>
 
-    <div class="image-container">
+    <div class="image-container" id="galleryGrid">
         <?php for ($i = 0; $i < 6; $i++): ?>
             <img class="batucaves2"
                 src="<?php echo $heroImg; ?>"
                 alt="<?php echo htmlspecialchars($destination['destination_name']); ?>">
         <?php endfor; ?>
 
-        </div>
+    </div>
 
-    <button class="next-button" id="reviewsNextBtn" onclick="toggleReviews()">
-        <img src="icon/next.png" alt="next" id="reviewsNextIcon">
-    </button>
+    <div style="display:flex; gap:10px; position:relative; left:1500px; top:-400px;">   
+        <button style="border:none; background:none; cursor:pointer;" class="next-button" id="galleryPrevBtn" onclick="changeGalleryPage(-1)">
+            <img src="icon/previous-button.png" alt="prev">
+        </button>
+
+        <button style="border:none; background:none; cursor:pointer;" class="next-button" id="galleryNextBtn" onclick="changeGalleryPage(1)">
+            <img src="icon/next.png" alt="next">
+        </button>
+    </div>
+    
 
     <p class="saying">What people saying about <?php echo htmlspecialchars($destination['destination_name']); ?> </p>
 
@@ -759,7 +772,7 @@ $heroImg = imgSrc($destination['image_url']);
 
 
     <button class="next-button1" id="reviewsNextBtn" onclick="toggleReviews()">
-        <img src="icon/next.png" alt="next" id="reviewsNextIcon">
+        <img src="icon/next.png" alt="next">
     </button>
 
     
@@ -767,7 +780,7 @@ $heroImg = imgSrc($destination['image_url']);
     <p class="similar-place">Similar Place</p>
 
     <?php if (count($similar) > 0): ?>
-        <div class="similar-card-container">
+        <div class="similar-card-container" id="similarGrid">
             <?php foreach ($similar as $place): ?>
                 <div class="similar-container"
                     onclick="window.location.href='admin-feedback.php?id=<?php echo $place['destination_id']; ?>'">
@@ -807,55 +820,140 @@ $heroImg = imgSrc($destination['image_url']);
         <p style="margin-left:50px; color:#666; margin-bottom:60px;">No similar places found.</p>
     <?php endif; ?>
 
-
-    <button class="next-button2" id="reviewsNextBtn" onclick="toggleReviews()">
-        <img src="icon/next.png" alt="next" id="reviewsNextIcon">
-    </button>
+    <div>
+        <button style="border:none; background:none; cursor:pointer;" class="next-button2" id="similarPrevBtn" onclick="changeSimilarPage(-1)">
+            <img src="icon/previous-button.png" alt="prev" >
+        </button>
+        <button style="border:none; background:none; cursor:pointer;" class="next-button2" id="similarNextBtn" onclick="changeSimilarPage(1)">
+            <img src="icon/next.png" alt="next">
+        </button>
+    </div>
+    
 
 <script>
+    var galleryImages = <?php echo $galleryJson; ?>;
+    var galleryPage   = 0;
+    var galleryPerPage = 6;
+
+    function renderGallery() {
+        var grid  = document.getElementById('galleryGrid');
+        var start = galleryPage * galleryPerPage;
+        var slice = galleryImages.slice(start, start + galleryPerPage);
+
+        grid.innerHTML = '';
+        slice.forEach(function(src) {
+            var img = document.createElement('img');
+            img.className = 'batucaves2';
+            img.src = src;
+            grid.appendChild(img);
+        });
+
+        // hide prev on first page
+        document.getElementById('galleryPrevBtn').style.visibility =
+            galleryPage === 0 ? 'hidden' : 'visible';
+
+        // hide next on last page
+        var totalPages = Math.ceil(galleryImages.length / galleryPerPage);
+        document.getElementById('galleryNextBtn').style.visibility =
+            galleryPage >= totalPages - 1 ? 'hidden' : 'visible';
+    }
+
+    function changeGalleryPage(dir) {
+        var totalPages = Math.ceil(galleryImages.length / galleryPerPage);
+        galleryPage += dir;
+        if (galleryPage < 0) galleryPage = 0;
+        if (galleryPage >= totalPages) galleryPage = totalPages - 1;
+        renderGallery();
+    }
+
+    renderGallery();
+
     var reviewsExpanded = false;
-    var similarExpanded = false;
- 
+
     function toggleReviews() {
-        var cards = document.querySelectorAll('#reviewsGrid .batu-container');
-        var btn = document.getElementById('reviewsNextBtn');
- 
-        if (!reviewsExpanded) {
-            cards.forEach(function(card) {
-                card.classList.remove('hidden-card');
-            });
-            btn.classList.add('showing-more');
-            reviewsExpanded = true;
-        } else {
-            cards.forEach(function(card, i) {
-                if (i >= 6) card.classList.add('hidden-card');
-            });
-            btn.classList.remove('showing-more');
-            reviewsExpanded = false;
-        }
+        var cards = document.querySelectorAll('.card-container .batu-container');
+        reviewsExpanded = !reviewsExpanded;
+        cards.forEach(function(card, i) {
+            if (i >= 6) {
+                card.style.display = reviewsExpanded ? 'block' : 'none';
+            }
+        });
     }
  
     function toggleSimilar() {
         var cards = document.querySelectorAll('#similarGrid .similar-container');
-        var btn = document.getElementById('similarNextBtn');
+        var btn   = document.getElementById('similarNextBtn');
  
-        if (!similarExpanded) {
-            // Show all cards
-            cards.forEach(function(card) {
-                card.classList.remove('hidden-card');
-            });
-            btn.classList.add('showing-more');
-            similarExpanded = true;
-        } else {
-            // Hide cards beyond first 3
-            cards.forEach(function(card, i) {
-                if (i >= 3) card.classList.add('hidden-card');
-            });
-            btn.classList.remove('showing-more');
-            similarExpanded = false;
-        }
+        similarExpanded = !similarExpanded;
+ 
+        cards.forEach(function(card, i) {
+            if (i >= 3) {
+                card.classList.toggle('hidden-card', !similarExpanded);
+            }
+        });
+ 
+        btn.classList.toggle('expanded', similarExpanded);
     }
+
+    var similarPlaces  = <?php echo $similarJson; ?>;
+    var similarPage    = 0;
+    var similarPerPage = 3;
+
+    function renderSimilar() {
+        var grid  = document.getElementById('similarGrid');
+        var start = similarPage * similarPerPage;
+        var slice = similarPlaces.slice(start, start + similarPerPage);
+
+        grid.innerHTML = '';
+        slice.forEach(function(place) {
+            var firstImg = place.image_url ? place.image_url.split(',')[0].trim() : 'image/default.jpg';
+            var price = place.price ? place.price.trim() : '';
+            price = price.replace(/^RM\s*/i, '');
+            var priceDisplay = (price === '0' || price.toLowerCase() === 'free' || price === '')
+                ? 'Free' : 'RM ' + price;
+
+            var div = document.createElement('div');
+            div.className = 'similar-container';
+            div.style.cursor = 'pointer';
+            div.onclick = function() {
+                window.location.href = 'admin-feedback.php?id=' + place.destination_id;
+            };
+
+            div.innerHTML = `
+                <img class="thean-hou" src="${firstImg}" alt="${place.destination_name}">
+                <p class="kuala-lumpur">${place.state_name}</p>
+                <p class="thean-hou-temple">${place.destination_name}</p>
+                <p class="hot">Climate: Hot</p>
+                <p class="ratings1">${parseFloat(place.average_rating).toFixed(1)}</p>
+                <img class="star-icon" src="icon/star.png">
+                <p class="number-rating">(${place.reviews_count})</p>
+                <div class="from-free-row">
+                    <span class="from">From</span>
+                    <span class="free">${priceDisplay}</span>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+
+        document.getElementById('similarPrevBtn').style.visibility =
+            similarPage === 0 ? 'hidden' : 'visible';
+
+        var totalPages = Math.ceil(similarPlaces.length / similarPerPage);
+        document.getElementById('similarNextBtn').style.visibility =
+            similarPage >= totalPages - 1 ? 'hidden' : 'visible';
+    }
+
+    function changeSimilarPage(dir) {
+        var totalPages = Math.ceil(similarPlaces.length / similarPerPage);
+        similarPage += dir;
+        if (similarPage < 0) similarPage = 0;
+        if (similarPage >= totalPages) similarPage = totalPages - 1;
+        renderSimilar();
+    }
+
+    renderSimilar();
 </script>
+
 
 </body>
 

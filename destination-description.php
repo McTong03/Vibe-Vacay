@@ -1,3 +1,133 @@
+<?php
+require 'conn.php';
+ 
+if (!isset($_GET['id'])) {
+    $first = $conn->query("SELECT destination_id FROM destinations ORDER BY destination_id ASC LIMIT 1");
+    $row   = $first->fetch_assoc();
+    if ($row) {
+        header("Location: destination-description.php?id=" . $row['destination_id']);
+        exit();
+    } else {
+        die('<p style="padding:40px; font-size:20px;">No destinations found in database.</p>');
+    }
+}
+ 
+$destination_id = intval($_GET['id']);
+
+   
+$stmt = $conn->prepare("
+    SELECT 
+        d.destination_id,
+        d.destination_name,
+        d.description,
+        d.image_url,
+        d.average_rating,
+        d.price,
+        d.reviews_count,
+        d.phone_number,
+        s.state_name
+    FROM destinations d
+    LEFT JOIN states s ON s.state_id = d.state_id
+    WHERE d.destination_id = ?
+");
+$stmt->bind_param("i", $destination_id);
+$stmt->execute();
+$result      = $stmt->get_result();
+$destination = $result->fetch_assoc();
+$stmt->close();
+ 
+if (!$destination) {
+    header("Location: destination-description.php");
+    exit();
+}
+ 
+// ── Fetch tags for this destination ─────────────────────────
+$stmt = $conn->prepare("
+    SELECT t.tag_name
+    FROM destination_tag_mapping dtm
+    JOIN destination_tags t ON t.tag_id = dtm.tag_id
+    WHERE dtm.destination_id = ?
+");
+$stmt->bind_param("i", $destination_id);
+$stmt->execute();
+$tags_result = $stmt->get_result();
+$tags = [];
+while ($tag = $tags_result->fetch_assoc()) {
+    $tags[] = $tag['tag_name'];
+}
+$stmt->close();
+
+$stmt = $conn->prepare("
+    SELECT 
+        r.review_id,
+        r.rating,
+        r.comment,
+        u.user_name,
+        COALESCE(p.profile_picture, 'image/default-profile.jpg') AS profile_picture
+    FROM reviews r
+    JOIN users u ON u.user_id = r.user_id
+    LEFT JOIN user_profile p ON p.user_id = r.user_id
+    WHERE r.destination_id = ?
+    ORDER BY r.review_id DESC
+");
+$stmt->bind_param("i", $destination_id);
+$stmt->execute();
+$reviews_result = $stmt->get_result();
+$reviews = [];
+while ($review = $reviews_result->fetch_assoc()) {
+    $reviews[] = $review;
+}
+$stmt->close();
+
+$stmt = $conn->prepare("
+    SELECT 
+        d.destination_id,
+        d.destination_name,
+        d.image_url,
+        d.average_rating,
+        d.reviews_count,
+        d.price,
+        s.state_name
+    FROM destinations d
+    LEFT JOIN states s ON s.state_id = d.state_id
+    WHERE d.state_id = (SELECT state_id FROM destinations WHERE destination_id = ?)
+      AND d.destination_id != ?
+    LIMIT 15
+");
+$stmt->bind_param("ii", $destination_id, $destination_id);
+$stmt->execute();
+$similar_result = $stmt->get_result();
+$similar = [];
+while ($row = $similar_result->fetch_assoc()) {
+    $similar[] = $row;
+}
+$stmt->close();
+ 
+function imgSrc($url, $fallback = 'image/default.jpg') {
+    return !empty($url) ? htmlspecialchars($url) : $fallback;
+}
+ 
+function formatPrice($price) {
+    $price = trim($price);
+    $price = preg_replace('/^RM\s*/i', '', $price);
+    return ($price == '0' || strtolower($price) == 'free' || empty($price))
+        ? 'Free'
+        : 'RM ' . htmlspecialchars($price);
+}
+ 
+$firstImage = explode(',', $destination['image_url'])[0];
+$heroImg = imgSrc(trim($firstImage));
+
+$galleryImages = [];
+if (!empty($destination['image_url'])) {
+    $allImages = array_filter(array_map('trim', explode(',', $destination['image_url'])));
+    $allImages = array_values($allImages);
+    $galleryImages = array_slice($allImages, 1);
+}
+$galleryJson = json_encode($galleryImages);
+$similarJson = json_encode($similar);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -123,7 +253,7 @@
         margin-left: 0;
         display: block;
         object-fit: cover;
-        }
+    }
 
     .batucaves-name,
     .malaysia,
@@ -137,8 +267,8 @@
     }
 
     .batucaves-name {
-        margin-top: -250px;
-        font-size: 55px;
+        margin-top: -180px;
+        font-size: 45px;
         margin-left: 60px;
     }
 
@@ -194,8 +324,8 @@
         height: 100px;
         width: 250px;
         border-radius: 30px;
-        margin-top: -200px;
-        margin-left: 1090px;
+        margin-top: -130px;
+        margin-left: 1150px;
     }
 
     .rating {
@@ -210,10 +340,22 @@
         font-size: 25px;
     }
     
+    .overview-price-wrapper {
+        display: flex;
+        align-items: flex-start;
+        gap: 40px;
+        margin-top: 40px;
+        padding: 0 50px;
+    }
+
+    .overview-container {
+        flex: 1;
+    }
+    
     .overview {
         font-size: 36px;
-        margin-top: 170px;
-        margin-left: 50px;
+        margin-top: 110px;
+        margin-left: 0;
         font-family: 'Open Sans';
         font-weight: bold;
     }
@@ -249,8 +391,8 @@
     }
 
     .add-container1{
-        margin-top: -360px;
-        margin-left: 800px;
+        margin-top: 60px;
+        margin-left: 750px;
         position: absolute;
         
     }
@@ -274,13 +416,14 @@
     }
 
     .price-container {
-            background-color: #D3D3D4;
-            width: 530px;
-            margin-top: -380px;
-            height: 114px;
-            margin-left: 1140px;
-            size: 30px;
-            border-radius: 20px;
+        background-color: #D3D3D4;
+        width: 300px;
+        min-width: 530px;
+        height: 114px;
+        margin-top: 50px;
+        border-radius: 20px;
+        flex-shrink: 0;
+        align-self: flex-start;
     }
 
     .price-tag {
@@ -292,12 +435,12 @@
     .price {
         font-size: 48px;
         margin-top: -70px;
-        margin-left: 260px;
+        margin-left: 240px;
     }
 
     .gallery {
         font-size: 36px;
-        margin-top: 280px;
+        margin-top: 40px;
         margin-left: 50px;
         font-family: 'Open Sans';
         font-weight: bold;
@@ -323,16 +466,9 @@
     }
 
     .next-button img,
-    .next-button1 img {
+    .next-button1 img,
+    .next-button2 img {
         width: 70px;
-    }
-
-    .next-button {
-        border:none;
-        background: none;
-        position: relative;
-        top: -405px;
-        left: 1570px;
     }
 
     .saying {
@@ -414,8 +550,8 @@
         border:none;
         background: none;
         position: relative;
-        top: -600px;
         left: 1350px;
+        top: -180px;
     }
 
     .experience {
@@ -517,7 +653,6 @@
 
     .similar-place {
         font-size: 36px;
-        margin-top: 60px;
         margin-left: 50px;
         font-family: 'Open Sans';
         font-weight: bold;
@@ -581,18 +716,25 @@
         margin-left: 83px;
     }
 
+    .from-free-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 20px 15px;
+    }
+ 
     .from {
         color: #63687A;
         font-size: 14px;
-        margin-top: -25px;
+        margin-top: -50px;
         margin-left: 200px;
     }
-
+ 
     .free {
         color: #1A2B49;
         font-size: 17px;
-        margin-top: -33px;
-        margin-left: 235px;
+        font-weight: bold;
+        margin-top: -50px;
     }
 
     .similar-card-container {
@@ -603,6 +745,18 @@
     .next-button1 {
         margin-top: 320px;
         margin-left: 40px;
+    }
+
+    .next-button2 {
+        border:none;
+        background: none;
+        position: relative;
+        top: -300px;
+        left: 1400px;
+    }
+
+    .no-reviews {
+        margin-left: 60px;
     }
 
 
@@ -630,277 +784,106 @@
         </div>
     </header>
 
-    <img class="batucaves1" src="image/batucaves1.avif">
+    <img class="batucaves1" src="<?php echo $heroImg; ?>" alt="<?php echo htmlspecialchars($destination['destination_name']); ?>">
 
-    <p class="batucaves-name">Batu Caves</p>
-    <p class="malaysia">Selangor, Malaysia</p>
-    <p class="tag">Tag:</p>
-
-    <div class="heritage-container">
-        <p class="heritage">Heritage</p>
-    </div>
-
-    <div class="culture-container">
-        <p class="culture">Culture</p>
-    </div>
+    <p class="batucaves-name"><?php echo htmlspecialchars($destination['destination_name']); ?></p>
+    <p class="malaysia"><?php echo htmlspecialchars($destination['state_name']); ?>, Malaysia</p>
     
-    <div  class="landmark-container">
-        <p class="landmark">Landmark</p>
-    </div>
+    <?php if (!empty($tags)): ?>
+        <p class="tag">Tag:</p>
+        <div class="tags-row">
+                <?php foreach ($tags as $tag): ?>
+                    <span class="tag-pill"><?php echo htmlspecialchars($tag); ?></span>
+                <?php endforeach; ?>
+            </div>
+    <?php endif; ?>
+
 
     <div class="rating-container">
-        <p class="rating">4.7</p>
+        <p class="rating"><?php echo number_format($destination['average_rating'], 1); ?></p>
         <p class="rating-name">Rating</p>
     </div>
 
-    <div class="overview-container">
-        <p class="overview">Overview</p>
-        <p class="overview1"><strong><span class="highlight">Batu Caves</span></strong> is one of Malaysia's most iconic cultural and religious landmarks.</p>
-        <p class="overview2">Located about 12km north of Kuala Lumpur, it features a stunning limestone cave complex and a Hindu temple dedicated to Lord Murugan.</p>
-        <p class="overview3">Famous for its towering 42.7 meter golden statue and 272 colorful steps. It's a must -visit destination that blends spiritual heritage with natural beauty.</p>
+    <div class="overview-price-wrapper">
+        <div class="overview-container">
+            <p class="overview">Overview</p>
+            <p class="overview1"><?php echo nl2br(htmlspecialchars($destination['description'])); ?></p>
+        </div>
+
+        <div class="add-container1">
+            <img class="heart-shape" src="icon/heart.png">
+            <button  class="add">Add to Wishlist</button>
+        </div>
+        
+        <div class="price-container">
+            <img class="price-tag" src="icon/price-tag.png">
+            <p class="price"><?php echo formatPrice($destination['price']); ?>
+        </div>
     </div>
 
-    <div class="add-container1">
-        <img class="heart-shape" src="icon/heart.png">
-        <button  class="add">Add to Wishlist</button>
-    </div>
     
-    <div class="price-container">
-        <img class="price-tag" src="icon/price-tag.png">
-        <p class="price">Free</p>
-    </div>
-
     <p class="gallery">Gallery</p>
 
-    <div class="image-container">
-        <img class="batucaves2" src="image/batucaves1.avif">
-        <img class="batucaves3" src="image/batucaves2.avif">
-        <img class="batucaves4" src="image/batucaves3.avif">
-        <img class="batucaves5" src="image/batucaves4.avif">
-        <img class="batucaves6" src="image/batucaves5.avif">
-        <img class="batucaves7" src="image/batucaves6.avif">
+    <div class="image-container" id="galleryGrid"></div>
+
+    <div style="display:flex; gap:10px; position:relative; left:1500px; top:-400px;">   
+        <button style="border:none; background:none; cursor:pointer;" class="next-button" id="galleryPrevBtn" onclick="changeGalleryPage(-1)">
+            <img src="icon/previous-button.png" alt="prev">
+        </button>
+
+        <button style="border:none; background:none; cursor:pointer;" class="next-button" id="galleryNextBtn" onclick="changeGalleryPage(1)">
+            <img src="icon/next.png" alt="next">
+        </button>
     </div>
 
-    <button class="next-button">
-        <img src="icon/next.png">
-    </button>
+    <p class="saying">What people saying about <?php echo htmlspecialchars($destination['destination_name']); ?></p>
 
-    <p class="saying">What people saying about Batu Caves</p>
+    <?php if (count($reviews) > 0): ?>
+        <div class="card-container">
+            <?php foreach ($reviews as $review): ?>
+                <div class="batu-container">
 
-    <div class="card-container">
-        <div class="batu-container">
-            <div>
-                <p class="batu-caves-name">Batu Caves</p>
-            </div>
+                    <div>
+                        <p class="batu-caves-name"><?php echo htmlspecialchars($destination['destination_name']); ?></p>
+                    </div>
 
-            <div>
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-            </div>
+                    <div>
+                        <?php for ($i = 0; $i < intval($review['rating']); $i++): ?>
+                            <img class="star1" src="icon/star.png" alt="star">                        
+                        <?php endfor; ?>
+                    </div>
 
-            <div>
-                <img class="profile-picture" src="image/profile-picture.png">
-            </div>
+                    <div>
+                        <img class="profile-picture" src="<?php echo htmlspecialchars($review['profile_picture']); ?>" 
+                            alt="profile">
+                    </div>
 
-            <div>
-                <p class="rating-names">John Tan</p>
-            </div>
+                    <div>
+                        <p class="rating-names"><?php echo htmlspecialchars($review['user_name']); ?></p>
+                    </div>
 
-            <div>
-                <p class="rating-date">March 31,2026</p>
-            </div>
+                    <div>
+                        <p class="rating-date"><?php echo date('F j, Y', strtotime($review['created_at'])); ?></p>
+                    </div>
 
-            <div>
-                <p class="rating-description">The Batu Caves were absolutely breathtaking! The golden state and colorful stairs create such an unforgettable sight. The spiritual inside the caves is truly powerful</p>
-            </div>
+                    <div>
+                        <p class="rating-description"><?php echo htmlspecialchars($review['comment']); ?></p>
+                    </div>
 
-            <div>
-                <img class="batucaves8" src="image/batucaves6.avif">
-            </div>
+                    <div>
+                        <img class="batucaves8" src="<?php echo $heroImg; ?>"
+                            alt="destination thumb">
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div> 
+        
+    <?php else: ?>
+        <p class="no-reviews">No reviews yet for this destination.</p>
+    <?php endif; ?>
   
-        </div>
-
-        <div class="batu-container">
-            <div>
-                <p class="batu-caves-name">Batu Caves</p>
-            </div>
-
-            <div>
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-            </div>
-
-            <div>
-                <img class="profile-picture" src="image/profile-picture.png">
-            </div>
-
-            <div>
-                <p class="rating-names">John Tan</p>
-            </div>
-
-            <div>
-                <p class="rating-date">March 31,2026</p>
-            </div>
-
-            <div>
-                <p class="rating-description">The Batu Caves were absolutely breathtaking! The golden state and colorful stairs create such an unforgettable sight. The spiritual inside the caves is truly powerful</p>
-            </div>
-
-            <div>
-                <img class="batucaves8" src="image/batucaves6.avif">
-            </div>
-    
-        </div>
-
-        <div class="batu-container">
-            <div>
-                <p class="batu-caves-name">Batu Caves</p>
-            </div>
-
-            <div>
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-            </div>
-
-            <div>
-                <img class="profile-picture" src="image/profile-picture.png">
-            </div>
-
-            <div>
-                <p class="rating-names">John Tan</p>
-            </div>
-
-            <div>
-                <p class="rating-date">March 31,2026</p>
-            </div>
-
-            <div>
-                <p class="rating-description">The Batu Caves were absolutely breathtaking! The golden state and colorful stairs create such an unforgettable sight. The spiritual inside the caves is truly powerful</p>
-            </div>
-
-            <div>
-                <img class="batucaves8" src="image/batucaves6.avif">
-            </div>
-    
-        </div>
-
-        <div class="batu-container">
-            <div>
-                <p class="batu-caves-name">Batu Caves</p>
-            </div>
-
-            <div>
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-            </div>
-
-            <div>
-                <img class="profile-picture" src="image/profile-picture.png">
-            </div>
-
-            <div>
-                <p class="rating-names">John Tan</p>
-            </div>
-
-            <div>
-                <p class="rating-date">March 31,2026</p>
-            </div>
-
-            <div>
-                <p class="rating-description">The Batu Caves were absolutely breathtaking! The golden state and colorful stairs create such an unforgettable sight. The spiritual inside the caves is truly powerful</p>
-            </div>
-
-            <div>
-                <img class="batucaves8" src="image/batucaves6.avif">
-            </div>
-    
-        </div>
-
-        <div class="batu-container">
-            <div>
-                <p class="batu-caves-name">Batu Caves</p>
-            </div>
-
-            <div>
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-            </div>
-
-            <div>
-                <img class="profile-picture" src="image/profile-picture.png">
-            </div>
-
-            <div>
-                <p class="rating-names">John Tan</p>
-            </div>
-
-            <div>
-                <p class="rating-date">March 31,2026</p>
-            </div>
-
-            <div>
-                <p class="rating-description">The Batu Caves were absolutely breathtaking! The golden state and colorful stairs create such an unforgettable sight. The spiritual inside the caves is truly powerful</p>
-            </div>
-
-            <div>
-                <img class="batucaves8" src="image/batucaves6.avif">
-            </div>
-    
-        </div>
-
-        <div class="batu-container">
-            <div>
-                <p class="batu-caves-name">Batu Caves</p>
-            </div>
-
-            <div>
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-                <img class="star1" src="icon/star.png">
-            </div>
-
-            <div>
-                <img class="profile-picture" src="image/profile-picture.png">
-            </div>
-
-            <div>
-                <p class="rating-names">John Tan</p>
-            </div>
-
-            <div>
-                <p class="rating-date">March 31,2026</p>
-            </div>
-
-            <div>
-                <p class="rating-description">The Batu Caves were absolutely breathtaking! The golden state and colorful stairs create such an unforgettable sight. The spiritual inside the caves is truly powerful</p>
-            </div>
-
-            <div>
-                <img class="batucaves8" src="image/batucaves6.avif">
-            </div>
-    
-        </div>
-    </div>
-
-    <button class="next-button1">
-        <img src="icon/next.png">
+    <button class="next-button1" id="reviewsNextBtn" onclick="toggleReviews()">
+        <img src="icon/next.png" alt="next">
     </button>
 
     <p class="experience">Write Your Experience</p>
@@ -910,28 +893,15 @@
             <p class="rating-name1">Rating:</p>
         </div>
         
-        <div>
-            <button class="star-container">
-                <img class="star2" src="icon/star1.png">
-            </button>
-
-            <button class="star-container">
-                <img class="star2" src="icon/star1.png">
-            </button>
-
-            <button class="star-container">
-                <img class="star2" src="icon/star1.png">
-            </button>
-
-            <button class="star-container">
-                <img class="star2" src="icon/star1.png">
-            </button>
-
-            <button class="star-container">
-                <img class="star2" src="icon/star1.png">
-            </button>
- 
+        <div id="star-rating-row">
+            <?php for ($s = 1; $s <= 5; $s++): ?>
+                <button class="star-container" onclick="setRating(<?php echo $s; ?>)" type="button">
+                    <img class="star2" id="star-<?php echo $s; ?>" src="icon/star1.png">
+                </button>
+            <?php endfor; ?>
         </div>
+
+        <input type="hidden" id="selected-rating" value="0">
 
         <div>
             <p class="description1">Description:</p>
@@ -941,7 +911,7 @@
         <div>
             <p class="photo">Photo:</p>
             <label class="upload-box">
-                <input type="file" accept="image/*" hidden>
+                <input type="file" id="review-image" accept="image/*" hidden>
                 
                 <img src="icon/upload.png" class="upload-icon">
                 <span class="upload-image">Upload image</span>
@@ -949,109 +919,265 @@
         </div>
 
         <div class="submit-container">
-            <button class="submit-button">Submit</button>
+            <button class="submit-button" onclick="submitReview()">Submit</button>
         </div>
 
+        <p id="review-msg" style="padding-left:40px; color:green; font-size:16px;"></p>
     </div>
 
     <p class="similar-place">Similar Place</p>
 
-    <div class="similar-card-container">
-        <div class="similar-container">
-            <div>
-                <img class="thean-hou" src="image/thean-hou.avif">
-            </div>
+    <?php if (count($similar) > 0): ?>
+        <div class="similar-card-container" id="similarGrid">
+            <?php foreach ($similar as $place): ?>
+                <div class="similar-container"
+                    onclick="window.location.href='destination-description.php.php?id=<?php echo $place['destination_id']; ?>'">
+                    
+                    <div>
+                        <img class="thean-hou" src="<?php echo imgSrc($place['image_url']); ?>"
+                            alt="<?php echo htmlspecialchars($place['destination_name']); ?>">
+                    </div>
 
-            <div>
-                <p class="kuala-lumpur">Kuala Lumpur</p>
-            </div>
+                    <div>
+                        <p class="kuala-lumpur"><?php echo htmlspecialchars($place['state_name']); ?></p>
+                    </div>
 
-            <div>
-                <p class="thean-hou-temple">Thean Hou Temple</p>
-            </div>
+                    <div>
+                        <p class="thean-hou-temple"><?php echo htmlspecialchars($place['destination_name']); ?></p>
+                    </div>
 
-            <div>
-                <p class="hot">Climate: Hot</p>
-            </div>
+                    <div>
+                        <p class="hot">Climate: Hot</p>
+                    </div>
 
-            <div>
-                <p class="ratings1">4.5</p>
-                <img class="star-icon" src="icon/star.png">
-                <p class="number-rating">(1,728)</p>
+                    <div>
+                        <p class="ratings1"><?php echo number_format($place['average_rating'], 1); ?></p>
+                        <img class="star-icon" src="icon/star.png">
+                        <p class="number-rating">(<?php echo $place['reviews_count']; ?>)</p>
 
-            </div>
+                    </div>
 
-            <div>
-                <p class="from">From</p>
-                <p class="free">Free</p>
-            </div>
+                    <div class="from-free-row">
+                            <span class="from">From</span>
+                            <span class="free"><?php echo formatPrice($place['price']); ?></span>
+                        </div>
+                </div>
+            <?php endforeach; ?>
         </div>
+    <?php else: ?>
+        <p style="margin-left:50px; color:#666; margin-bottom:60px;">No similar places found.</p>
+    <?php endif; ?>
 
-        <div class="similar-container">
-            <div>
-                <img class="national-mosque" src="image/national-mosque.avif">
-            </div>
-
-            <div>
-                <p class="kuala-lumpur">Kuala Lumpur</p>
-            </div>
-
-            <div>
-                <p class="thean-hou-temple">Nasional Mosque</p>
-            </div>
-
-            <div>
-                <p class="hot">Climate: Tropical</p>
-            </div>
-
-            <div>
-                <p class="ratings1">4.9</p>
-                <img class="star-icon" src="icon/star.png">
-                <p class="number-rating">(1,748)</p>
-
-            </div>
-
-            <div>
-                <p class="from">From</p>
-                <p class="free">Free</p>
-            </div>
-        </div>
-
-        <div class="similar-container">
-            <div>
-                <img class="genting-highlands" src="image/genting-highlands.jpg">
-            </div>
-
-            <div>
-                <p class="kuala-lumpur">Pahang</p>
-            </div>
-
-            <div>
-                <p class="thean-hou-temple">Genting Highlands (Theme Park)</p>
-            </div>
-
-            <div>
-                <p class="hot">Climate: Cool</p>
-            </div>
-
-            <div>
-                <p class="ratings1">4.7</p>
-                <img class="star-icon" src="icon/star.png">
-                <p class="number-rating">(1,728)</p>
-
-            </div>
-
-            <div>
-                <p class="from">From</p>
-                <p class="free">RM167</p>
-            </div>
-        </div>
+    <div>
+        <button style="border:none; background:none; cursor:pointer;" class="next-button2" id="similarPrevBtn" onclick="changeSimilarPage(-1)">
+            <img src="icon/previous-button.png" alt="prev" >
+        </button>
+        <button style="border:none; background:none; cursor:pointer;" class="next-button2" id="similarNextBtn" onclick="changeSimilarPage(1)">
+            <img src="icon/next.png" alt="next">
+        </button>
     </div>
 
-    <button class="next-button1">
-        <img src="icon/next.png">
-    </button>
+<script>
+    var galleryImages = <?php echo $galleryJson; ?>;
+    var galleryPage   = 0;
+    var galleryPerPage = 6;
 
+    function renderGallery() {
+        var grid  = document.getElementById('galleryGrid');
+        var start = galleryPage * galleryPerPage;
+        var slice = galleryImages.slice(start, start + galleryPerPage);
+
+        grid.innerHTML = '';
+        slice.forEach(function(src) {
+            var img = document.createElement('img');
+            img.className = 'batucaves2';
+            img.src = src;
+            grid.appendChild(img);
+        });
+
+        // hide prev on first page
+        document.getElementById('galleryPrevBtn').style.visibility =
+            galleryPage === 0 ? 'hidden' : 'visible';
+
+        // hide next on last page
+        var totalPages = Math.ceil(galleryImages.length / galleryPerPage);
+        document.getElementById('galleryNextBtn').style.visibility =
+            galleryPage >= totalPages - 1 ? 'hidden' : 'visible';
+    }
+
+    function changeGalleryPage(dir) {
+        var totalPages = Math.ceil(galleryImages.length / galleryPerPage);
+        galleryPage += dir;
+        if (galleryPage < 0) galleryPage = 0;
+        if (galleryPage >= totalPages) galleryPage = totalPages - 1;
+        renderGallery();
+    }
+
+    renderGallery();
+
+    var reviewsExpanded = false;
+
+    function toggleReviews() {
+        var cards = document.querySelectorAll('.card-container .batu-container');
+        reviewsExpanded = !reviewsExpanded;
+        cards.forEach(function(card, i) {
+            if (i >= 6) {
+                card.style.display = reviewsExpanded ? 'block' : 'none';
+            }
+        });
+    }
+ 
+    function toggleSimilar() {
+        var cards = document.querySelectorAll('#similarGrid .similar-container');
+        var btn   = document.getElementById('similarNextBtn');
+ 
+        similarExpanded = !similarExpanded;
+ 
+        cards.forEach(function(card, i) {
+            if (i >= 3) {
+                card.classList.toggle('hidden-card', !similarExpanded);
+            }
+        });
+ 
+        btn.classList.toggle('expanded', similarExpanded);
+    }
+
+    var similarPlaces  = <?php echo $similarJson; ?>;
+    var similarPage    = 0;
+    var similarPerPage = 3;
+
+    function renderSimilar() {
+        var grid  = document.getElementById('similarGrid');
+        var start = similarPage * similarPerPage;
+        var slice = similarPlaces.slice(start, start + similarPerPage);
+
+        grid.innerHTML = '';
+        slice.forEach(function(place) {
+            var firstImg = place.image_url ? place.image_url.split(',')[0].trim() : 'image/default.jpg';
+            var price = place.price ? place.price.trim() : '';
+            price = price.replace(/^RM\s*/i, '');
+            var priceDisplay = (price === '0' || price.toLowerCase() === 'free' || price === '')
+                ? 'Free' : 'RM ' + price;
+
+            var div = document.createElement('div');
+            div.className = 'similar-container';
+            div.style.cursor = 'pointer';
+            div.onclick = function() {
+                window.location.href = 'destination-description.php?id=' + place.destination_id;
+            };
+
+            div.innerHTML = `
+                <img class="thean-hou" src="${firstImg}" alt="${place.destination_name}">
+                <p class="kuala-lumpur">${place.state_name}</p>
+                <p class="thean-hou-temple">${place.destination_name}</p>
+                <p class="hot">Climate: Hot</p>
+                <p class="ratings1">${parseFloat(place.average_rating).toFixed(1)}</p>
+                <img class="star-icon" src="icon/star.png">
+                <p class="number-rating">(${place.reviews_count})</p>
+                <div class="from-free-row">
+                    <span class="from">From</span>
+                    <span class="free">${priceDisplay}</span>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+
+        document.getElementById('similarPrevBtn').style.visibility =
+            similarPage === 0 ? 'hidden' : 'visible';
+
+        var totalPages = Math.ceil(similarPlaces.length / similarPerPage);
+        document.getElementById('similarNextBtn').style.visibility =
+            similarPage >= totalPages - 1 ? 'hidden' : 'visible';
+    }
+
+    function changeSimilarPage(dir) {
+        var totalPages = Math.ceil(similarPlaces.length / similarPerPage);
+        similarPage += dir;
+        if (similarPage < 0) similarPage = 0;
+        if (similarPage >= totalPages) similarPage = totalPages - 1;
+        renderSimilar();
+    }
+
+    renderSimilar();
+
+
+    function setRating(value) {
+        document.getElementById('selected-rating').value = value;
+        for (var i = 1; i <= 5; i++) {
+            document.getElementById('star-' + i).src =
+                i <= value ? 'icon/star.png' : 'icon/star1.png';
+        }
+    }
+
+    // ── Submit Review ─────────────────────────────────────
+    function submitReview() {
+        var rating  = document.getElementById('selected-rating').value;
+        var comment = document.getElementById('review-comment').value.trim();
+        var image   = document.getElementById('review-image').files[0];
+        var msg     = document.getElementById('review-msg');
+
+        if (rating == 0) { msg.style.color = 'red'; msg.textContent = 'Please select a rating.'; return; }
+        if (!comment)    { msg.style.color = 'red'; msg.textContent = 'Please write a comment.'; return; }
+
+        var formData = new FormData();
+        formData.append('destination_id', <?php echo $destination_id; ?>);
+        formData.append('rating', rating);
+        formData.append('comment', comment);
+        if (image) formData.append('image', image);
+
+        fetch('submit-review.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                msg.style.color = 'green';
+                msg.textContent = 'Review submitted successfully!';
+
+                // Reset form
+                setRating(0);
+                document.getElementById('review-comment').value = '';
+                document.getElementById('review-image').value = '';
+
+                // Add new review card to the top of the card container
+                var container = document.querySelector('.card-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'card-container';
+                    document.querySelector('.saying').after(container);
+                }
+
+                var r = data.review;
+                var stars = '';
+                for (var i = 0; i < r.rating; i++) {
+                    stars += '<img class="star1" src="icon/star.png" alt="star">';
+                }
+
+                var card = document.createElement('div');
+                card.className = 'batu-container';
+                card.innerHTML = `
+                    <p class="batu-caves-name"><?php echo htmlspecialchars($destination['destination_name']); ?></p>
+                    <div>${stars}</div>
+                    <img class="profile-picture" src="${r.profile_picture}" alt="profile">
+                    <p class="rating-names">${r.user_name}</p>
+                    <p class="rating-date">Just now</p>
+                    <p class="rating-description">${r.comment}</p>
+                    <img class="batucaves8" src="<?php echo $heroImg; ?>" alt="thumb">
+                `;
+
+                container.insertBefore(card, container.firstChild);
+            } else {
+                msg.style.color = 'red';
+                msg.textContent = data.message || 'Something went wrong.';
+            }
+        })
+        .catch(function() {
+            msg.style.color = 'red';
+            msg.textContent = 'Network error. Please try again.';
+        });
+    }
+</script>
 </body>
 
 </html>

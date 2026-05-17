@@ -1,0 +1,75 @@
+<?php
+require 'conn.php';
+session_start();
+
+header('Content-Type: application/json');
+
+// Get user_id from session - adjust to match your session variable name
+$user_id = $_SESSION['user_id'] ?? null;
+
+if (!$user_id) {
+    echo json_encode(['success' => false, 'message' => 'Not logged in']);
+    exit();
+}
+
+$destination_id = intval($_POST['destination_id'] ?? 0);
+$rating         = intval($_POST['rating'] ?? 0);
+$comment        = trim($_POST['comment'] ?? '');
+$image_url      = '';
+
+if ($destination_id <= 0 || $rating < 1 || $rating > 5 || empty($comment)) {
+    echo json_encode(['success' => false, 'message' => 'Please fill in all fields']);
+    exit();
+}
+
+// Handle image upload
+if (!empty($_FILES['image']['name'])) {
+    $uploadDir = 'image/reviews/';
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+    $filename  = time() . '_' . basename($_FILES['image']['name']);
+    $target    = $uploadDir . $filename;
+    if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
+        $image_url = $target;
+    }
+}
+
+$stmt = $conn->prepare("
+    INSERT INTO reviews (user_id, destination_id, rating, comment, image_url)
+    VALUES (?, ?, ?, ?, ?)
+");
+$stmt->bind_param("iiiss", $user_id, $destination_id, $rating, $comment, $image_url);
+
+if ($stmt->execute()) {
+    // Fetch the new review to return to JS
+    $review_id = $stmt->insert_id;
+    $stmt->close();
+
+    $stmt2 = $conn->prepare("
+        SELECT r.review_id, r.rating, r.comment,
+               u.user_name,
+               COALESCE(p.profile_picture, 'image/default-profile.jpg') AS profile_picture
+        FROM reviews r
+        JOIN users u ON u.user_id = r.user_id
+        LEFT JOIN user_profile p ON p.user_id = r.user_id
+        WHERE r.review_id = ?
+    ");
+    $stmt2->bind_param("i", $review_id);
+    $stmt2->execute();
+    $row = $stmt2->get_result()->fetch_assoc();
+    $stmt2->close();
+
+    // Update average_rating and reviews_count
+    $conn->query("
+        UPDATE destinations
+        SET reviews_count = reviews_count + 1,
+            average_rating = (
+                SELECT AVG(rating) FROM reviews WHERE destination_id = $destination_id
+            )
+        WHERE destination_id = $destination_id
+    ");
+
+    echo json_encode(['success' => true, 'review' => $row]);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Failed to save review']);
+}
+?>
