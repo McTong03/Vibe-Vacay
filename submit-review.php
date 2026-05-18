@@ -23,19 +23,25 @@ if ($destination_id <= 0 || $rating < 1 || $rating > 5 || empty($comment)) {
 }
 
 // Handle image upload
-if (!empty($_FILES['image']['name'])) {
+if (!empty($_FILES['images']['name'][0])) {
     $uploadDir = 'image/reviews/';
     if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-    $filename  = time() . '_' . basename($_FILES['image']['name']);
-    $target    = $uploadDir . $filename;
-    if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
-        $image_url = $target;
+    $urls = [];
+    foreach ($_FILES['images']['tmp_name'] as $i => $tmp) {
+        if ($_FILES['images']['error'][$i] === 0) {
+            $filename = time() . '_' . $i . '_' . basename($_FILES['images']['name'][$i]);
+            $target   = $uploadDir . $filename;
+            if (move_uploaded_file($tmp, $target)) {
+                $urls[] = $target;
+            }
+        }
     }
+    $image_url = implode(',', $urls);
 }
 
 $stmt = $conn->prepare("
-    INSERT INTO reviews (user_id, destination_id, rating, comment, image_url)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO reviews (user_id, destination_id, rating, comment, image_url, created_at)
+    VALUES (?, ?, ?, ?, ?, CURDATE())
 ");
 $stmt->bind_param("iiiss", $user_id, $destination_id, $rating, $comment, $image_url);
 
@@ -45,7 +51,7 @@ if ($stmt->execute()) {
     $stmt->close();
 
     $stmt2 = $conn->prepare("
-        SELECT r.review_id, r.rating, r.comment,
+        SELECT r.review_id, r.rating, r.comment, r.image_url,
                u.user_name,
                COALESCE(p.profile_picture, 'image/default-profile.jpg') AS profile_picture
         FROM reviews r

@@ -1,5 +1,26 @@
 <?php
+session_start();
 require 'conn.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+// Fetch logged-in user's profile picture
+$user_id = $_SESSION['user_id'];
+$stmt = $conn->prepare("
+    SELECT u.user_name, COALESCE(p.profile_picture, 'image/default-profile.jpg') AS profile_picture
+    FROM users u
+    LEFT JOIN user_profile p ON p.user_id = u.user_id
+    WHERE u.user_id = ?
+");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$user_result = $stmt->get_result();
+$logged_user = $user_result->fetch_assoc();
+$stmt->close();
+
  
 if (!isset($_GET['id'])) {
     $first = $conn->query("SELECT destination_id FROM destinations ORDER BY destination_id ASC LIMIT 1");
@@ -62,6 +83,7 @@ $stmt = $conn->prepare("
         r.review_id,
         r.rating,
         r.comment,
+        r.image_url,
         u.user_name,
         COALESCE(p.profile_picture, 'image/default-profile.jpg') AS profile_picture
     FROM reviews r
@@ -488,7 +510,8 @@ $similarJson = json_encode($similar);
 
     .batu-container {
         max-width: 400px;
-        height: 400px;
+        min-height: 400px;
+        height: auto;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         margin-left: 50px;
         border-radius: 18px;
@@ -556,17 +579,17 @@ $similarJson = json_encode($similar);
 
     .experience {
         font-size: 36px;
-        margin-left: 50px;
+        margin-left: 70px;
         font-family: 'Open Sans';
         font-weight: bold;
-        margin-top: -130px;
+        margin-top: 500px;
     }
 
     .rating-experience-container {
         width: 1200px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         height: 500px;
-        margin-left: 50px;
+        margin-left: 70px;
         margin-top: -20px;
         background-color: #FAF9F9;
     }
@@ -596,6 +619,20 @@ $similarJson = json_encode($similar);
         background-color: #FAF9F9;
     }
 
+
+    #review-comment {
+        background-color: #E8E5E5;
+        width: 800px;
+        height: 50px;
+        border-radius: 10px;
+        margin-left: 40px;
+        border: none;
+        padding-left: 20px;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+    #review-comment::placeholder { color: #888; }
+
     .description1 {
         padding-top: 10px;
     }
@@ -618,13 +655,17 @@ $similarJson = json_encode($similar);
         margin-top: 30px;
     }
 
+    .upload-area { 
+        margin-left: 40px; 
+        margin-top: 10px; 
+    }
+
     .upload-box {
         display: flex;
         background-color: #E8E5E5;
         width: 300px;
         height: 50px;
         border-radius: 10px;
-        margin-left: 40px;
     }
 
     .upload-icon {
@@ -640,9 +681,49 @@ $similarJson = json_encode($similar);
         font-size: 20px;
     }
 
+    .photo-preview-row { 
+        display: flex; 
+        flex-wrap: wrap; 
+        gap: 10px; 
+        margin-top: 12px; 
+        min-height: 20px;
+    }
+
+    .photo-preview-item { 
+        position: relative; 
+        width: 80px; 
+        height: 80px; 
+    }
+
+    .photo-preview-item img { 
+        width: 80px; 
+        height: 80px; 
+        object-fit: cover; 
+        border-radius: 8px; 
+    }
+
+    .remove-photo {
+        position: absolute; 
+        top: -6px; 
+        right: -6px;
+        background: red; 
+        color: white; 
+        border: none;
+        border-radius: 50%; 
+        width: 20px; 
+        height: 20px;
+        font-size: 13px; 
+        cursor: pointer; 
+        line-height: 20px;
+        text-align: center; 
+        padding: 0;
+    }
+
+
+
     .submit-button {
-        margin-top: 50px;
-        margin-left: 950px;
+        margin-top: -50px;
+        margin-left: 900px;
         width: 200px;
         height: 50px;
         font-weight: bold;
@@ -656,6 +737,7 @@ $similarJson = json_encode($similar);
         margin-left: 50px;
         font-family: 'Open Sans';
         font-weight: bold;
+        padding-top: 100px;
     }
 
     .similar-container {
@@ -812,7 +894,8 @@ $similarJson = json_encode($similar);
 
         <div class="add-container1">
             <img class="heart-shape" src="icon/heart.png">
-            <button  class="add">Add to Wishlist</button>
+            <button  class="add" onclick="addToWishlist()">Add to Wishlist</button>
+            <p id="wishlist-msg" style="font-size:14px; margin-top:10px;"></p>
         </div>
         
         <div class="price-container">
@@ -863,28 +946,38 @@ $similarJson = json_encode($similar);
                     </div>
 
                     <div>
-                        <p class="rating-date"><?php echo date('F j, Y', strtotime($review['created_at'])); ?></p>
+                        <p class="rating-date"><?php echo !empty($review['created_at']) ? date('F j, Y', strtotime($review['created_at'])) : ''; ?></p>
                     </div>
 
                     <div>
                         <p class="rating-description"><?php echo htmlspecialchars($review['comment']); ?></p>
                     </div>
 
-                    <div>
-                        <img class="batucaves8" src="<?php echo $heroImg; ?>"
-                            alt="destination thumb">
-                    </div>
+                    <?php if (!empty($review['image_url'])): ?>
+                        <?php foreach (explode(',', $review['image_url']) as $imgPath): ?>
+                            <img class="batucaves8" src="<?php echo htmlspecialchars(trim($imgPath)); ?>"
+                                alt="destination thumb">
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div> 
         
     <?php else: ?>
-        <p class="no-reviews">No reviews yet for this destination.</p>
+        <p class="no-reviews" id="no-reviews-msg">No reviews yet for this destination.</p>
     <?php endif; ?>
   
-    <button class="next-button1" id="reviewsNextBtn" onclick="toggleReviews()">
-        <img src="icon/next.png" alt="next">
-    </button>
+    <div style="display:flex; gap:10px; justify-content:flex-end; padding-right:60px; margin-top:-450px;">
+        <button style="border:none; background:none; cursor:pointer; display:none;" id="reviewsPrevBtn" onclick="changeReviewPage(-1)">
+            <img src="icon/previous-button.png" alt="prev" style="width:70px;">
+        </button>
+
+        <button style="border:none; background:none; cursor:pointer; <?php echo count($reviews) <= 6 ? 'display:none;' : ''; ?>" id="reviewsNextBtn" onclick="changeReviewPage(1)">
+            <img src="icon/next.png" alt="next" style="width:70px;">
+        </button>
+    </div>
+
+
 
     <p class="experience">Write Your Experience</p>
 
@@ -905,25 +998,26 @@ $similarJson = json_encode($similar);
 
         <div>
             <p class="description1">Description:</p>
-            <input id="search-input" type="text" name="search" placeholder="Leave a comment..."/>
+            <input id="review-comment" type="text" name="search" placeholder="Leave a comment..."/>
         </div>
 
         <div>
             <p class="photo">Photo:</p>
-            <label class="upload-box">
-                <input type="file" id="review-image" accept="image/*" hidden>
-                
-                <img src="icon/upload.png" class="upload-icon">
-                <span class="upload-image">Upload image</span>
-            </label>
-        </div>
+            <div class="upload-area">
+                <label class="upload-box">
+                    <input type="file" id="review-images" accept="image/*" multiple hidden>
+                    <img src="icon/upload.png" class="upload-icon">
+                    <span class="upload-image">Upload image</span>
+                </label>
+                <div class="photo-preview-row" id="photoPreviewRow"></div>
+            </div>
 
-        <div class="submit-container">
-            <button class="submit-button" onclick="submitReview()">Submit</button>
-        </div>
+            <div class="submit-container">
+                <button class="submit-button" onclick="submitReview()">Submit</button>
+            </div>
 
-        <p id="review-msg" style="padding-left:40px; color:green; font-size:16px;"></p>
-    </div>
+            <p id="review-msg" style="padding-left:40px; color:green; font-size:16px;"></p>
+        </div>
 
     <p class="similar-place">Similar Place</p>
 
@@ -1005,6 +1099,13 @@ $similarJson = json_encode($similar);
             galleryPage >= totalPages - 1 ? 'hidden' : 'visible';
     }
 
+    (function() {
+        var cards = document.querySelectorAll('.card-container .batu-container');
+        cards.forEach(function(card, i) {
+            if (i >= 6) card.style.display = 'none';
+        });
+    })();
+
     function changeGalleryPage(dir) {
         var totalPages = Math.ceil(galleryImages.length / galleryPerPage);
         galleryPage += dir;
@@ -1015,17 +1116,31 @@ $similarJson = json_encode($similar);
 
     renderGallery();
 
-    var reviewsExpanded = false;
+    // ── Reviews toggle ────────────────────────────────────
+    var reviewPage = 0;
+    var reviewsPerPage = 6;
 
-    function toggleReviews() {
+    function changeReviewPage(dir) {
         var cards = document.querySelectorAll('.card-container .batu-container');
-        reviewsExpanded = !reviewsExpanded;
+        var totalPages = Math.ceil(cards.length / reviewsPerPage);
+
+        reviewPage += dir;
+        if (reviewPage < 0) reviewPage = 0;
+        if (reviewPage >= totalPages) reviewPage = totalPages - 1;
+
         cards.forEach(function(card, i) {
-            if (i >= 6) {
-                card.style.display = reviewsExpanded ? 'block' : 'none';
-            }
+            var start = reviewPage * reviewsPerPage;
+            var end = start + reviewsPerPage;
+            card.style.display = (i >= start && i < end) ? 'block' : 'none';
         });
+
+        document.getElementById('reviewsPrevBtn').style.display =
+            reviewPage === 0 ? 'none' : 'inline-block';
+
+        document.getElementById('reviewsNextBtn').style.display =
+            reviewPage >= totalPages - 1 ? 'none' : 'inline-block';
     }
+
  
     function toggleSimilar() {
         var cards = document.querySelectorAll('#similarGrid .similar-container');
@@ -1109,11 +1224,44 @@ $similarJson = json_encode($similar);
         }
     }
 
+    // ── Multiple Photo Preview ────────────────────────────
+    var selectedFiles = [];
+ 
+    document.getElementById('review-images').addEventListener('change', function() {
+        Array.from(this.files).forEach(function(file) {
+            selectedFiles.push(file);
+        });
+        renderPhotoPreview();
+        this.value = ''; // reset so same file can be picked again
+    });
+ 
+    function renderPhotoPreview() {
+        var row = document.getElementById('photoPreviewRow');
+        row.innerHTML = '';
+        selectedFiles.forEach(function(file, index) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var item = document.createElement('div');
+                item.className = 'photo-preview-item';
+                item.innerHTML = `
+                    <img src="${e.target.result}" alt="preview">
+                    <button class="remove-photo" onclick="removePhoto(${index})">×</button>
+                `;
+                row.appendChild(item);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+ 
+    function removePhoto(index) {
+        selectedFiles.splice(index, 1);
+        renderPhotoPreview();
+    }
+
     // ── Submit Review ─────────────────────────────────────
     function submitReview() {
         var rating  = document.getElementById('selected-rating').value;
         var comment = document.getElementById('review-comment').value.trim();
-        var image   = document.getElementById('review-image').files[0];
         var msg     = document.getElementById('review-msg');
 
         if (rating == 0) { msg.style.color = 'red'; msg.textContent = 'Please select a rating.'; return; }
@@ -1123,7 +1271,9 @@ $similarJson = json_encode($similar);
         formData.append('destination_id', <?php echo $destination_id; ?>);
         formData.append('rating', rating);
         formData.append('comment', comment);
-        if (image) formData.append('image', image);
+        selectedFiles.forEach(function(file) {   
+        formData.append('images[]', file);
+    });
 
         fetch('submit-review.php', {
             method: 'POST',
@@ -1138,7 +1288,12 @@ $similarJson = json_encode($similar);
                 // Reset form
                 setRating(0);
                 document.getElementById('review-comment').value = '';
-                document.getElementById('review-image').value = '';
+                selectedFiles = [];
+                renderPhotoPreview();
+
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
 
                 // Add new review card to the top of the card container
                 var container = document.querySelector('.card-container');
@@ -1148,6 +1303,9 @@ $similarJson = json_encode($similar);
                     document.querySelector('.saying').after(container);
                 }
 
+                var noReviewMsg = document.getElementById('no-reviews-msg');
+                if (noReviewMsg) noReviewMsg.style.display = 'none';
+
                 var r = data.review;
                 var stars = '';
                 for (var i = 0; i < r.rating; i++) {
@@ -1156,6 +1314,11 @@ $similarJson = json_encode($similar);
 
                 var card = document.createElement('div');
                 card.className = 'batu-container';
+                var imgHtml = '';
+                if (r.image_url) {
+                    var firstImg = r.image_url.split(',')[0].trim();
+                    imgHtml = `<img class="batucaves8" src="${firstImg}" alt="thumb">`;
+                }
                 card.innerHTML = `
                     <p class="batu-caves-name"><?php echo htmlspecialchars($destination['destination_name']); ?></p>
                     <div>${stars}</div>
@@ -1163,7 +1326,7 @@ $similarJson = json_encode($similar);
                     <p class="rating-names">${r.user_name}</p>
                     <p class="rating-date">Just now</p>
                     <p class="rating-description">${r.comment}</p>
-                    <img class="batucaves8" src="<?php echo $heroImg; ?>" alt="thumb">
+                    ${imgHtml}
                 `;
 
                 container.insertBefore(card, container.firstChild);
@@ -1172,7 +1335,33 @@ $similarJson = json_encode($similar);
                 msg.textContent = data.message || 'Something went wrong.';
             }
         })
-        .catch(function() {
+        .catch(function(err) {
+            console.error(err);
+            msg.style.color = 'red';
+            msg.textContent = 'Network error. Please try again.';
+        });
+    }
+
+    function addToWishlist() {
+        var msg = document.getElementById('wishlist-msg');
+        var formData = new FormData();
+        formData.append('destination_id', <?php echo $destination_id; ?>);
+
+        fetch('add-wishlist.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                msg.style.color = 'green';
+                msg.textContent = '✓ Added to wishlist!';
+            } else {
+                msg.style.color = 'red';
+                msg.textContent = data.message;
+            }
+        })
+        .catch(function(err) {
             msg.style.color = 'red';
             msg.textContent = 'Network error. Please try again.';
         });

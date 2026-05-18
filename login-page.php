@@ -23,9 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($email === '' || $pass === '') {
         $error_message = "Please enter email and password";
     } else {
-        $stmt = $con->prepare('SELECT user_id, user_name, user_password, user_role FROM users WHERE user_email = ? LIMIT 1');
+        $stmt = $conn->prepare('SELECT user_id, user_name, user_password, user_role FROM users WHERE user_email = ? LIMIT 1');
         if (!$stmt) {
-            die('Database error: ' . $con->error);
+            die('Database error: ' . $conn->error);
         }
 
         $stmt->bind_param('s', $email);
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_message = "Wrong email or password";
             } else {
                 $profile_picture = 'Image/defaultProfile.png';
-                $stmt2 = $con->prepare('SELECT profile_picture FROM user_profile WHERE user_id = ? LIMIT 1');
+                $stmt2 = $conn->prepare('SELECT profile_picture FROM user_profile WHERE user_id = ? LIMIT 1');
                 if ($stmt2) {
                     $profile_picture_result = '';
                     $stmt2->bind_param('i', $uid);
