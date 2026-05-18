@@ -162,11 +162,9 @@
         height: 60px;
         margin-top: 15px;
         border-radius: 10px;
-
         display: flex;
         justify-content: space-between;
         align-items: center;
-
         padding-left: 20px;
         padding-right: 20px;
     }
