@@ -534,7 +534,7 @@ $similarJson = json_encode($similar);
         margin-left: 50px;
         font-family: 'Open Sans';
         font-weight: bold;
-        padding-top: 400px;
+        padding-top: 500px;
     }
 
     .similar-container {
@@ -622,16 +622,17 @@ $similarJson = json_encode($similar);
     }
 
     .trash-button {
-        width: 30px;
-        margin-left: 330px;
-        margin-top: 10px;
+        border: none;
+        background: none;
+        margin-left: 340px;
+        margin-top: -210px;
         position: absolute;
     }
 
-    .trash-container {
-        border: none;
-        background-color: white;
+    .trash-button img {
+        width: 30px;
     }
+
 
     .next-button2 {
         border:none;
@@ -755,6 +756,14 @@ $similarJson = json_encode($similar);
                     <div>
                         <p class="rating-description"><?php echo htmlspecialchars($review['comment']); ?></p>
                     </div>
+
+                    <div class="trash-container">
+                        <button class="trash-button" onclick="if(confirm('Are you sure you want to delete this review?')) 
+                            window.location.href='delete-review.php?id=<?php echo $review['review_id']; ?>'">
+                            <img src="icon/delete.png">
+                        </button>
+                    </div>
+                    
 
                     <?php if (!empty($review['image_url'])): ?>
                         <?php foreach (explode(',', $review['image_url']) as $imgPath): ?>
